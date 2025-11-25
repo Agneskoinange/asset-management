@@ -8,12 +8,13 @@ interface ButtonProps {
     className?: string;
     onClick?: () => void;
     type?: "button" | "submit" | "reset";
+    disabled?: boolean;
 }
 
 
 const Button = ({
     label, variant = "primary", fullWidth = false,
-    className, onClick, type = "button" }: ButtonProps) => {
+    className, onClick, type = "button", disabled = false }: ButtonProps) => {
         const baseStyles = 
             "px-4 py-2 rounded-lg font-medium transition-all active:scale-95";
         
@@ -33,6 +34,7 @@ const Button = ({
             <button
                 type={type}
                 onClick={onClick}
+                disabled={disabled}
                 className={merged}
             >
             {label}
