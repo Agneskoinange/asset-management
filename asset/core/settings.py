@@ -196,14 +196,14 @@ DJOSER = {
     'USERNAME_CHANGED_EMAIL_CONFIRMATION': False,
     'PASSWORD_CHANGED_EMAIL_CONFIRMATION': False,
     'SEND_CONFIRMATION_EMAIL': False,
-    'SEND_ACTIVATION_EMAIL': False,
-    'ACTIVATION_URL': 'auth/activate/{uid}/{token}/',
+    'SEND_ACTIVATION_EMAIL': True,  # Enable activation emails for Milestone 1
+    'ACTIVATION_URL': 'auth/activate?uid={uid}&token={token}',  # URL format for Next.js frontend
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}/',
     'USERNAME_RESET_CONFIRM_URL': 'auth/username/reset/confirm/{uid}/{token}/',
     'SERIALIZERS': {},
     'PASSWORD_RESET_CONFIRM_RETYPE': True,  # requires users to confirm new password
     'TOKEN_MODEL': None,
-    
+
     # Authorization
     'PERMISSIONS': {
         'user': ['accounts.permissions.IsAdminOrOwner'],  # object-level permission
@@ -225,6 +225,15 @@ SWAGGER_SETTINGS = {
     }
 }
 
+# Email configuration for Milestone 1
+# Using console backend for development - emails will be printed to terminal
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 1025
+DEFAULT_FROM_EMAIL = 'noreply@assetmanager.com'
+SITE_NAME = 'Asset Manager'
+DOMAIN = 'localhost:3000'  # Frontend domain for activation links
+
 # Cross platform connection
 
 # Allow requests Only from these frontends
@@ -238,12 +247,12 @@ CORS_ALLOWED_ORIGINS = [
 # Allow cookies (session, csrf) to be sent with cross-origin requests
 CORS_ALLOW_CREDENTIALS = True
 
-
-# Email conf
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
+# Production email configuration (commented out for Milestone 1)
+# Uncomment and configure these when deploying to production
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_USE_TLS = True
+# EMAIL_PORT = 587
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+# DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')

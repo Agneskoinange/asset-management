@@ -1,5 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Type definitions for API requests/responses
 interface LoginCredentials {
   username: string;
   password: string;
@@ -22,6 +23,14 @@ interface ApiError {
   errors?: Record<string, string[]>;
 }
 
+/**
+ * Minimal API Client for Milestone 1: Authentication Basics
+ *
+ * This client handles only the essential authentication operations:
+ * - User Registration
+ * - User Login (JWT tokens)
+ * - Email Activation
+ */
 class ApiClient {
   private baseUrl: string;
 
@@ -29,6 +38,9 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
+  /**
+   * Generic request handler for all API calls
+   */
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -54,6 +66,11 @@ class ApiClient {
         } as ApiError;
       }
 
+      // Some endpoints return 204 No Content
+      if (response.status === 204) {
+        return {} as T;
+      }
+
       return await response.json();
     } catch (error) {
       if (error instanceof Error) {
@@ -65,20 +82,10 @@ class ApiClient {
     }
   }
 
-  private getAuthHeader(token: string): Record<string, string> {
-    return {
-      Authorization: `Bearer ${token}`,
-    };
-  }
-
-  // Authentication endpoints
-  async login(credentials: LoginCredentials): Promise<AuthTokens> {
-    return this.request<AuthTokens>('/auth/jwt/create/', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-  }
-
+  /**
+   * Register a new user
+   * Calls Djoser's /auth/users/ endpoint
+   */
   async register(data: RegisterData): Promise<any> {
     return this.request('/auth/users/', {
       method: 'POST',
@@ -86,20 +93,21 @@ class ApiClient {
     });
   }
 
-  async refreshToken(refreshToken: string): Promise<{ access: string }> {
-    return this.request<{ access: string }>('/auth/jwt/refresh/', {
+  /**
+   * Login user and get JWT tokens
+   * Calls Djoser's /auth/jwt/create/ endpoint
+   */
+  async login(credentials: LoginCredentials): Promise<AuthTokens> {
+    return this.request<AuthTokens>('/auth/jwt/create/', {
       method: 'POST',
-      body: JSON.stringify({ refresh: refreshToken }),
+      body: JSON.stringify(credentials),
     });
   }
 
-  async verifyToken(token: string): Promise<any> {
-    return this.request('/auth/jwt/verify/', {
-      method: 'POST',
-      body: JSON.stringify({ token }),
-    });
-  }
-
+  /**
+   * Activate user account with uid and token from email
+   * Calls Djoser's /auth/users/activation/ endpoint
+   */
   async activateAccount(uid: string, token: string): Promise<any> {
     return this.request('/auth/users/activation/', {
       method: 'POST',
@@ -107,74 +115,14 @@ class ApiClient {
     });
   }
 
+  /**
+   * Resend activation email if user didn't receive it
+   * Calls Djoser's /auth/users/resend_activation/ endpoint
+   */
   async resendActivation(email: string): Promise<any> {
     return this.request('/auth/users/resend_activation/', {
       method: 'POST',
       body: JSON.stringify({ email }),
-    });
-  }
-
-  async resetPassword(email: string): Promise<any> {
-    return this.request('/auth/users/reset_password/', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  async resetPasswordConfirm(
-    uid: string,
-    token: string,
-    new_password: string,
-    re_new_password: string
-  ): Promise<any> {
-    return this.request('/auth/users/reset_password_confirm/', {
-      method: 'POST',
-      body: JSON.stringify({ uid, token, new_password, re_new_password }),
-    });
-  }
-
-  async setPassword(
-    accessToken: string,
-    current_password: string,
-    new_password: string,
-    re_new_password: string
-  ): Promise<any> {
-    return this.request('/auth/users/set_password/', {
-      method: 'POST',
-      headers: this.getAuthHeader(accessToken),
-      body: JSON.stringify({ current_password, new_password, re_new_password }),
-    });
-  }
-
-  // Profile endpoints
-  async getProfile(accessToken: string): Promise<any> {
-    return this.request('/api/profile/me/', {
-      method: 'GET',
-      headers: this.getAuthHeader(accessToken),
-    });
-  }
-
-  async updateProfile(accessToken: string, data: any): Promise<any> {
-    return this.request('/api/profile/me/', {
-      method: 'PATCH',
-      headers: this.getAuthHeader(accessToken),
-      body: JSON.stringify(data),
-    });
-  }
-
-  // User endpoints
-  async getMe(accessToken: string): Promise<any> {
-    return this.request('/auth/users/me/', {
-      method: 'GET',
-      headers: this.getAuthHeader(accessToken),
-    });
-  }
-
-  async updateMe(accessToken: string, data: any): Promise<any> {
-    return this.request('/auth/users/me/', {
-      method: 'PATCH',
-      headers: this.getAuthHeader(accessToken),
-      body: JSON.stringify(data),
     });
   }
 }

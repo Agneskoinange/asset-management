@@ -8,6 +8,12 @@ import Button from '@/app/components/ui/Button'
 import MainLogo from '@/app/components/ui/Logo'
 import { api } from '@/app/lib/api'
 
+/**
+ * RegisterForm Component - Milestone 1
+ *
+ * This form handles user registration by calling Djoser's /auth/users/ endpoint.
+ * After successful registration, the user receives an activation email.
+ */
 const RegisterForm = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
@@ -34,7 +40,7 @@ const RegisterForm = () => {
         setSuccess('');
         setLoading(true);
 
-        // Validate passwords match
+        // Client-side validation: check if passwords match
         if (formData.password !== formData.re_password) {
             setError('Passwords do not match');
             setLoading(false);
@@ -42,6 +48,7 @@ const RegisterForm = () => {
         }
 
         try {
+            // Call Djoser's registration endpoint
             await api.register({
                 username: formData.username,
                 email: formData.email,
@@ -49,14 +56,15 @@ const RegisterForm = () => {
                 re_password: formData.re_password
             });
 
-            setSuccess('Account created successfully! Redirecting to login...');
+            setSuccess('Account created successfully! Please check your email to activate your account.');
             console.log('Registration successful!');
 
-            // Redirect to login after 3 seconds
+            // Redirect to login after 5 seconds
             setTimeout(() => {
                 router.push('/auth/login');
-            }, 3000);
+            }, 5000);
         } catch (err: any) {
+            // Handle API errors
             const errorMessage = err.errors
                 ? Object.entries(err.errors).map(([key, value]: [string, any]) => `${key}: ${value.join(', ')}`).join('\n')
                 : err.message || 'Registration failed. Please try again.';
@@ -70,7 +78,7 @@ const RegisterForm = () => {
     return (
         <div className="min-h-screen bg-black flex justify-center items-start pt-20 px-4 sm:px-6 lg:px-0">
             <div className="flex flex-col items-center w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl space-y-10 text-white">
-                
+
                 {/* Logo */}
                 <MainLogo />
 
@@ -179,7 +187,12 @@ const RegisterForm = () => {
                     {/* Login link */}
                     <p className="text-gray-400 text-sm sm:text-base text-center">
                         Already have an account?
-                        <span className="pl-1 cursor-pointer text-blue-500 font-bold">Log in</span>
+                        <span
+                            className="pl-1 cursor-pointer text-blue-500 font-bold"
+                            onClick={() => router.push('/auth/login')}
+                        >
+                            Log in
+                        </span>
                     </p>
                 </form>
             </div>

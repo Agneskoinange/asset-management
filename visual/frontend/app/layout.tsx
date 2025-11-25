@@ -3,7 +3,13 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import DesNav from "./components/NavBar/DesNav";
 import MobileNav from "./components/NavBar/MobileNav";
-import { AuthProvider } from "./context/AuthContext";
+
+/**
+ * Root Layout - Milestone 1
+ *
+ * Minimal layout with just fonts and navigation.
+ * No AuthProvider or global state - keeping it simple!
+ */
 
 const headings = Poppins({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -16,8 +22,8 @@ const bodys = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Asset Manager",
-  description: "Manage your assets securly and modern way"
+  title: "Asset Manager - Milestone 1",
+  description: "Basic authentication with Djoser and Next.js"
 };
 
 export default function RootLayout({
@@ -30,20 +36,16 @@ export default function RootLayout({
       <body
         className={`${headings.className} ${bodys.className} antialiased`}
       >
-        <AuthProvider>
-          <>
-            {/* Mobile navigation */}
-            <MobileNav />
+        {/* Mobile navigation */}
+        <MobileNav />
 
-            {/* Desktop navigation */}
-            <DesNav />
+        {/* Desktop navigation */}
+        <DesNav />
 
-            {/* Page content with spacing for fixed nav */}
-            <div className="pt-[70px]">
-              {children}
-            </div>
-          </>
-        </AuthProvider>
+        {/* Page content with spacing for fixed nav */}
+        <div className="pt-[70px]">
+          {children}
+        </div>
       </body>
     </html>
   );

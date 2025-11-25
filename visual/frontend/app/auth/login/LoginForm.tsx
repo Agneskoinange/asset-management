@@ -6,11 +6,16 @@ import Button from '@/app/components/ui/Button';
 import { FaLock } from 'react-icons/fa';
 import { MdEmail } from 'react-icons/md';
 import MainLogo from '@/app/components/ui/Logo';
-import { useAuth } from '@/app/context/AuthContext';
+import { api } from '@/app/lib/api';
 
+/**
+ * LoginForm Component - Milestone 1
+ *
+ * This form handles user login by calling Djoser's /auth/jwt/create/ endpoint.
+ * On successful login, JWT tokens (access & refresh) are stored in localStorage.
+ */
 const LoginForm = () => {
     const router = useRouter();
-    const { login } = useAuth();
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -33,9 +38,21 @@ const LoginForm = () => {
         setLoading(true);
 
         try {
-            await login(formData.username, formData.password);
-            console.log('Login successful!');
-            router.push('/dashboard');
+            // Call Djoser's JWT login endpoint
+            const tokens = await api.login({
+                username: formData.username,
+                password: formData.password
+            });
+
+            // Store tokens in localStorage
+            localStorage.setItem('access_token', tokens.access);
+            localStorage.setItem('refresh_token', tokens.refresh);
+
+            console.log('Login successful!', tokens);
+
+            // Redirect to a success page or dashboard
+            alert('Login successful! Tokens saved to localStorage.');
+            router.push('/auth/register'); // For now, redirect back to register (you can change this later)
         } catch (err: any) {
             setError(err.message || 'Login failed. Please check your credentials.');
             console.error('Login error:', err);
@@ -61,7 +78,7 @@ const LoginForm = () => {
                 <p className="pt-3 text-gray-300">
                     Access encrypted storage, smart asset tracking, and seamless
                     document management. Login to maintain control over your digital
-                    essentials. Git test
+                    essentials.
                 </p>
             </div>
 
@@ -149,7 +166,12 @@ const LoginForm = () => {
                             />
                         </form>
                         <p className="pt-4 text-gray-400 pl-[170px]">Don't have an account?
-                            <span className="pl-1 cursor-pointer text-blue-500 font-bold">Sign up</span>
+                            <span
+                                className="pl-1 cursor-pointer text-blue-500 font-bold"
+                                onClick={() => router.push('/auth/register')}
+                            >
+                                Sign up
+                            </span>
                         </p>
                     </div>
                 </div>
