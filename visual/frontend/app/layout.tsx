@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import DesNav from "./components/NavBar/DesNav";
 import MobileNav from "./components/NavBar/MobileNav";
+import { AuthProvider } from "./context/AuthContext";
 
 const headings = Poppins({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -29,18 +30,20 @@ export default function RootLayout({
       <body
         className={`${headings.className} ${bodys.className} antialiased`}
       >
-        <>
-      {/* Mobile navigation */}
-      <MobileNav />
+        <AuthProvider>
+          <>
+            {/* Mobile navigation */}
+            <MobileNav />
 
-      {/* Desktop navigation */}
-      <DesNav />
+            {/* Desktop navigation */}
+            <DesNav />
 
-      {/* Page content with spacing for fixed nav */}
-      <div className="pt-[70px]">
-        {children}
-      </div>
-    </>
+            {/* Page content with spacing for fixed nav */}
+            <div className="pt-[70px]">
+              {children}
+            </div>
+          </>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -193,10 +193,10 @@ AUTH_USER_MODEL = 'accounts.User'
 DJOSER = {
     'LOGIN_FIELD': 'username',
     'USER_CREATE_PASSWORD_RETYPE': True,
-    'USERNAME_CHANGED_EMAIL_CONFIRMATION': True,
-    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': True,
-    'SEND_CONFIRMATION_EMAIL': True,
-    'SEND_ACTIVATION_EMAIL': True,
+    'USERNAME_CHANGED_EMAIL_CONFIRMATION': False,
+    'PASSWORD_CHANGED_EMAIL_CONFIRMATION': False,
+    'SEND_CONFIRMATION_EMAIL': False,
+    'SEND_ACTIVATION_EMAIL': False,
     'ACTIVATION_URL': 'auth/activate/{uid}/{token}/',
     'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}/',
     'USERNAME_RESET_CONFIRM_URL': 'auth/username/reset/confirm/{uid}/{token}/',
@@ -231,6 +231,8 @@ SWAGGER_SETTINGS = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
 ]
 
 # Allow cookies (session, csrf) to be sent with cross-origin requests
