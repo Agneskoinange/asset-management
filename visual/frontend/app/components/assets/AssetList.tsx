@@ -1,10 +1,14 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Button from '../ui/Button'
 import { IoMdSearch } from 'react-icons/io'
 import { MdUnfoldLess } from 'react-icons/md'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { api } from '@/app/lib/api'
+import { authStorage } from '@/app/lib/auth'
+import { Asset } from '@/app/types/asset'
+import AssetCard from '../AssetCard'
 
 type AssetCardProps = {
   onClick?: () => void;
@@ -14,6 +18,86 @@ const AssetList = ({ onClick }: AssetCardProps) => {
     const router = useRouter();
 
     const [assetShow, setAssetShow] = useState(false);
+    const [assets, setAssets] = useState<Asset[]>([]);
+    const [filteredAssets, setFilteredAssets] = useState<Asset[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedFilter, setSelectedFilter] = useState('All Assets');
+
+    useEffect(() => {
+        fetchAssets();
+    }, []);
+
+    useEffect(() => {
+        filterAssets();
+    }, [searchQuery, selectedFilter, assets]);
+
+    const fetchAssets = async () => {
+        const token = authStorage.getAccessToken();
+        if (!token) {
+            router.push('/auth/login');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const data = await api.getAssets(token);
+            setAssets(data);
+            setFilteredAssets(data);
+        } catch (err: any) {
+            console.error('Failed to fetch assets:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filterAssets = () => {
+        let filtered = [...assets];
+
+        // Apply search filter
+        if (searchQuery) {
+            filtered = filtered.filter(asset =>
+                asset.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+        }
+
+        // Apply category filter
+        if (selectedFilter !== 'All Assets') {
+            const filterMap: Record<string, string> = {
+                'Properties': 'property',
+                'Gold': 'money',
+                'Cars': 'vehicle',
+                'Money': 'money',
+                'Business': 'business',
+                'Products': 'products',
+                'Contracts': 'contracts'
+            };
+            const categoryFilter = filterMap[selectedFilter];
+            if (categoryFilter) {
+                filtered = filtered.filter(asset => asset.type === categoryFilter);
+            }
+        }
+
+        setFilteredAssets(filtered);
+    };
+
+    const handleDelete = async (asset: Asset) => {
+        if (!confirm(`Are you sure you want to delete "${asset.name}"?`)) return;
+
+        const token = authStorage.getAccessToken();
+        if (!token) return;
+
+        try {
+            await api.deleteAsset(token, asset.id);
+            setAssets(assets.filter(a => a.id !== asset.id));
+        } catch (err: any) {
+            alert(err.message || 'Failed to delete asset');
+        }
+    };
+
+    const handleEdit = (asset: Asset) => {
+        router.push(`/assets/edit-asset/${asset.id}`);
+    };
 
     return (
         <>
@@ -35,12 +119,14 @@ const AssetList = ({ onClick }: AssetCardProps) => {
                     </p>
                     {/* Search and filters */}
                     <div className="flex flex-row space-x-4 pl-4 pr-5">
-                        <form className="w-full mt-2 relative" onSubmit={() => console.log('submit form')}>
+                        <form className="w-full mt-2 relative" onSubmit={(e) => e.preventDefault()}>
                             <IoMdSearch className="absolute top-2 left-3 text-2xl text-gray-400" />
 
                             <input
                                 type="search"
                                 name="q"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search by asset name..."
                                 className="w-full h-10 pl-12 pr-3 rounded border border-gray-600
                                     bg-gray-700 text-white placeholder-gray-400
@@ -68,41 +154,19 @@ const AssetList = ({ onClick }: AssetCardProps) => {
                                 {/* Dropdown Menu */}
                                 <div className={`absolute ${assetShow ? 'block' : 'hidden'} left-0 right-0 mt-2 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-20`}>
                                     <ul className="py-2 text-sm text-gray-200">
-                                        <li>
-                                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 cursor-pointer">
-                                                All Assets
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 cursor-pointer">
-                                                Active
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 cursor-pointer">
-                                                Archived
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 cursor-pointer">
-                                                Properties
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 cursor-pointer">
-                                                Gold
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 cursor-pointer">
-                                                Cars
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <button className="w-full text-left px-4 py-2 hover:bg-gray-700 cursor-pointer">
-                                                Money
-                                            </button>
-                                        </li>
+                                        {['All Assets', 'Properties', 'Business', 'Cars', 'Products', 'Contracts', 'Money'].map((filter) => (
+                                            <li key={filter}>
+                                                <button
+                                                    className="w-full text-left px-4 py-2 hover:bg-gray-700 cursor-pointer"
+                                                    onClick={() => {
+                                                        setSelectedFilter(filter);
+                                                        setAssetShow(false);
+                                                    }}
+                                                >
+                                                    {filter}
+                                                </button>
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
                             </div>
@@ -111,297 +175,27 @@ const AssetList = ({ onClick }: AssetCardProps) => {
                     </div>
                 </div>
                 <div className="p-4 sm:p-8 grid xs:grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 text-white">
-                    {/* Card 1 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg
-                        overflow-hidden transition-shadow duration-300 cursor-pointer">
-                        {/* Card image */}
-                        <img
-                            className="w-full h-48 object-cover"
-                            src="/property.png"
-                            alt="Brazil property"
-                        />
-
-                        {/* Card content */}
-                        <div className="p-5 flex flex-col space-y-2">
-                            <h2 className="text-white text-xl font-semibold">Jungle Villa</h2>
-                            <p className="text-gray-400 text-md">Our best property in Brazil</p>
-                            <Button
-                                label='View Details'
-                                type='button'
-                                className='cursor-pointer'
-                            />
+                    {loading ? (
+                        <div className="col-span-full text-center py-12">
+                            <div className="text-xl text-gray-400">Loading assets...</div>
                         </div>
-                    </div>
-                    {/* Card 2 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow durations-300 cursor-pointer">
-                            <img
-                            className="w-full h-48 object-cover"
-                            src="/lfa.png"
-                            alt="LFA Lexus"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-xl">LFA Lexus 2015</h2>
-                                <p className="text-gray-400 text md">599 HP LFA CNA</p>
-                                 <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                    onClick={() => router.push("/assets/1")}
-                                />
+                    ) : filteredAssets.length === 0 ? (
+                        <div className="col-span-full text-center py-12">
+                            <div className="text-xl text-gray-400">
+                                {searchQuery || selectedFilter !== 'All Assets' ? 'No assets found matching your filters' : 'No assets found. Add your first asset!'}
                             </div>
-                    </div>
-                    {/* Card 3 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow duration-300 cursor-pointer">
-                            {/* Card image */}
-                            <img
-                                className="w-full h-48 object-cover"
-                                src="/gold.jpg"
-                                alt="Brazil property"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-2xl">Gold Reserv</h2>
-                                <p className="text-gray-400 text-md">1 Kg gold bars of reserv</p>
-                                <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
-                    {/* Card 4 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg
-                        overflow-hidden transition-shadow duration-300 cursor-pointer">
-                        {/* Card image */}
-                        <img
-                            className="w-full h-48 object-cover"
-                            src="/property.png"
-                            alt="Brazil property"
-                        />
-
-                        {/* Card content */}
-                        <div className="p-5 flex flex-col space-y-2">
-                            <h2 className="text-white text-xl font-semibold">Jungle Villa</h2>
-                            <p className="text-gray-400 text-md">Our best property in Brazil</p>
-                            <Button
-                                label='View Details'
-                                type='button'
-                                className='cursor-pointer'
-                            />
                         </div>
-                    </div>
-                    {/* Card 5 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow durations-300 cursor-pointer">
-                            <img
-                            className="w-full h-48 object-cover"
-                            src="/lfa.png"
-                            alt="LFA Lexus"
+                    ) : (
+                        filteredAssets.map((asset) => (
+                            <AssetCard
+                                key={asset.id}
+                                asset={asset}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                                onClick={(asset) => router.push(`/assets/${asset.id}`)}
                             />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-xl">LFA Lexus 2015</h2>
-                                <p className="text-gray-400 text md">599 HP LFA CNA</p>
-                                 <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
-                    {/* Card 6 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow duration-300 cursor-pointer">
-                            {/* Card image */}
-                            <img
-                                className="w-full h-48 object-cover"
-                                src="/gold.jpg"
-                                alt="Brazil property"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-2xl">Gold Reserv</h2>
-                                <p className="text-gray-400 text-md">1 Kg gold bars of reserv</p>
-                                <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
-                    {/* Card 7 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg
-                        overflow-hidden transition-shadow duration-300 cursor-pointer">
-                        {/* Card image */}
-                        <img
-                            className="w-full h-48 object-cover"
-                            src="/property.png"
-                            alt="Brazil property"
-                        />
-
-                        {/* Card content */}
-                        <div className="p-5 flex flex-col space-y-2">
-                            <h2 className="text-white text-xl font-semibold">Jungle Villa</h2>
-                            <p className="text-gray-400 text-md">Our best property in Brazil</p>
-                            <Button
-                                label='View Details'
-                                type='button'
-                                className='cursor-pointer'
-                            />
-                        </div>
-                    </div>
-                    {/* Card 8 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow durations-300 cursor-pointer">
-                            <img
-                            className="w-full h-48 object-cover"
-                            src="/lfa.png"
-                            alt="LFA Lexus"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-xl">LFA Lexus 2015</h2>
-                                <p className="text-gray-400 text md">599 HP LFA CNA</p>
-                                 <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
-                    {/* Card 9 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow duration-300 cursor-pointer">
-                            {/* Card image */}
-                            <img
-                                className="w-full h-48 object-cover"
-                                src="/gold.jpg"
-                                alt="Brazil property"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-2xl">Gold Reserv</h2>
-                                <p className="text-gray-400 text-md">1 Kg gold bars of reserv</p>
-                                <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
-                    {/* Card 10 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg
-                        overflow-hidden transition-shadow duration-300 cursor-pointer">
-                        {/* Card image */}
-                        <img
-                            className="w-full h-48 object-cover"
-                            src="/property.png"
-                            alt="Brazil property"
-                        />
-
-                        {/* Card content */}
-                        <div className="p-5 flex flex-col space-y-2">
-                            <h2 className="text-white text-xl font-semibold">Jungle Villa</h2>
-                            <p className="text-gray-400 text-md">Our best property in Brazil</p>
-                            <Button
-                                label='View Details'
-                                type='button'
-                                className='cursor-pointer'
-                            />
-                        </div>
-                    </div>
-                    {/* Card 11 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow durations-300 cursor-pointer">
-                            <img
-                            className="w-full h-48 object-cover"
-                            src="/lfa.png"
-                            alt="LFA Lexus"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-xl">LFA Lexus 2015</h2>
-                                <p className="text-gray-400 text md">599 HP LFA CNA</p>
-                                 <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
-                    {/* Card 12 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow duration-300 cursor-pointer">
-                            {/* Card image */}
-                            <img
-                                className="w-full h-48 object-cover"
-                                src="/gold.jpg"
-                                alt="Brazil property"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-2xl">Gold Reserv</h2>
-                                <p className="text-gray-400 text-md">1 Kg gold bars of reserv</p>
-                                <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
-                    {/* Card 13 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg
-                        overflow-hidden transition-shadow duration-300 cursor-pointer">
-                        {/* Card image */}
-                        <img
-                            className="w-full h-48 object-cover"
-                            src="/property.png"
-                            alt="Brazil property"
-                        />
-
-                        {/* Card content */}
-                        <div className="p-5 flex flex-col space-y-2">
-                            <h2 className="text-white text-xl font-semibold">Jungle Villa</h2>
-                            <p className="text-gray-400 text-md">Our best property in Brazil</p>
-                            <Button
-                                label='View Details'
-                                type='button'
-                                className='cursor-pointer'
-                            />
-                        </div>
-                    </div>
-                    {/* Card 14 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow durations-300 cursor-pointer">
-                            <img
-                            className="w-full h-48 object-cover"
-                            src="/lfa.png"
-                            alt="LFA Lexus"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-xl">LFA Lexus 2015</h2>
-                                <p className="text-gray-400 text md">599 HP LFA CNA</p>
-                                 <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
-                    {/* Card 15 */}
-                    <div className="w-full shadow-md hover:shadow-lg bg-gray-600 rounded-lg overflow-hidden
-                        transition-shadow duration-300 cursor-pointer">
-                            {/* Card image */}
-                            <img
-                                className="w-full h-48 object-cover"
-                                src="/gold.jpg"
-                                alt="Brazil property"
-                            />
-                            <div className="flex flex-col space-y-2 p-5">
-                                <h2 className="text-white font-semibold text-2xl">Gold Reserv</h2>
-                                <p className="text-gray-400 text-md">1 Kg gold bars of reserv</p>
-                                <Button
-                                    label='View Details'
-                                    type='button'
-                                    className='cursor-pointer'
-                                />
-                            </div>
-                    </div>
+                        ))
+                    )}
                 </div>
             </div>
         </>

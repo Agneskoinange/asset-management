@@ -35,9 +35,14 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
+    // Don't set Content-Type for FormData
+    const isFormData = options.body instanceof FormData;
+
     const config: RequestInit = {
       ...options,
-      headers: {
+      headers: isFormData ? {
+        ...options.headers,
+      } : {
         'Content-Type': 'application/json',
         ...options.headers,
       },
@@ -175,6 +180,49 @@ class ApiClient {
       method: 'PATCH',
       headers: this.getAuthHeader(accessToken),
       body: JSON.stringify(data),
+    });
+  }
+
+  // Assets endpoints
+  async getAssets(accessToken: string): Promise<any[]> {
+    return this.request('/api/assets/', {
+      method: 'GET',
+      headers: this.getAuthHeader(accessToken),
+    });
+  }
+
+  async getAsset(accessToken: string, id: number): Promise<any> {
+    return this.request(`/api/assets/${id}/`, {
+      method: 'GET',
+      headers: this.getAuthHeader(accessToken),
+    });
+  }
+
+  async createAsset(accessToken: string, data: FormData): Promise<any> {
+    return this.request('/api/assets/', {
+      method: 'POST',
+      headers: {
+        ...this.getAuthHeader(accessToken),
+        // Don't set Content-Type for FormData, let browser set it with boundary
+      },
+      body: data,
+    });
+  }
+
+  async updateAsset(accessToken: string, id: number, data: FormData): Promise<any> {
+    return this.request(`/api/assets/${id}/`, {
+      method: 'PATCH',
+      headers: {
+        ...this.getAuthHeader(accessToken),
+      },
+      body: data,
+    });
+  }
+
+  async deleteAsset(accessToken: string, id: number): Promise<void> {
+    return this.request(`/api/assets/${id}/`, {
+      method: 'DELETE',
+      headers: this.getAuthHeader(accessToken),
     });
   }
 }
